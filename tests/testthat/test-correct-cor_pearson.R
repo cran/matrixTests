@@ -27,7 +27,7 @@ base_cor_pearson <- function(mat1, mat2, alt="two.sided", conf=0.95) {
     p[i]   <- res$p.value
     cl[i]  <- ifelse(is.null(res$conf.int), NA, res$conf.int[1])
     ch[i]  <- ifelse(is.null(res$conf.int), NA, res$conf.int[2])
-    cnf[i] <- ifelse(is.null(res$conf.int), conf, attr(res$conf.int, "conf.level"))
+    cnf[i] <- ifelse(is.null(res$conf.int), conf[i], attr(res$conf.int, "conf.level"))
     df[i]  <- res$parameter
     mu[i]  <- res$null.value
     al[i]  <- res$alternative
@@ -53,7 +53,7 @@ test_that("monte-carlo random testing gives equal results", {
   cfs  <- seq(0, 1, length.out=nrow(X))
 
   t1 <- base_cor_pearson(X, Y, alts, cfs)
-  t2 <- row_cor_pearson(X, Y, alts, cfs)
+  t2 <- suppressWarnings(row_cor_pearson(X, Y, alts, cfs))
 
   expect_equal(t1, t2)
 })
@@ -90,7 +90,7 @@ test_that("perfect correlations give equal results", {
   expect_equal(t1, t2)
 })
 
-test_that("minumum allowed sample sizes give equal results", {
+test_that("minimum allowed sample sizes give equal results", {
   # three numbers
   x <- matrix(rnorm(9), ncol=3); y <- matrix(rnorm(9), ncol=3)
   alt <- c("two.sided", "greater", "less")
