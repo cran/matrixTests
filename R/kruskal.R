@@ -59,15 +59,16 @@ row_kruskalwallis <- function(x, g) {
   nPerGroup <- matrix(numeric(), nrow=nrow(x), ncol=length(unique(g)))
   rPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
-    group <- unique(g)[i]
-    nPerGroup[,i] <- matrixStats::rowCounts(!is.na(x[,g==group, drop=FALSE]))
-    rPerGroup[,i] <- rowSums(ranks[,g==group, drop=FALSE], na.rm=TRUE)
+    inds <- g == unique(g)[i]
+    tmpx <- x[,inds, drop=FALSE]
+    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    rPerGroup[,i] <- rowSums(ranks[,inds, drop=FALSE], na.rm=TRUE)
   }
 
   nSamples <- rowSums(nPerGroup)
   nGroups  <- matrixStats::rowCounts(nPerGroup!=0)
 
-  st0 <- rowSums(rPerGroup^2/nPerGroup, na.rm=TRUE)
+  st0 <- rowSums(rPerGroup*rPerGroup/nPerGroup, na.rm=TRUE)
   st1 <- 12*st0 / (nSamples * (nSamples + 1)) - 3 * (nSamples + 1)
   st2 <- 1 - rowSums(ties^3 - ties) / (nSamples^3 - nSamples)
   stat <- st1/st2

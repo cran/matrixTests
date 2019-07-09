@@ -70,7 +70,7 @@ row_oneway_equalvar <- function(x, g) {
   mPerGroup <- vPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- matrixStats::rowCounts(!is.na(tmpx))
+    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
     vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
   }
@@ -150,7 +150,7 @@ row_oneway_welch <- function(x, g) {
   mPerGroup <- vPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- matrixStats::rowCounts(!is.na(tmpx))
+    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
     vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
   }
@@ -165,7 +165,7 @@ row_oneway_welch <- function(x, g) {
   M         <- rowSums((wPerGroup * mPerGroup)/wTot, na.rm=TRUE)
 
   betweenScatter <- rowSums(wPerGroup * (mPerGroup-M)^2, na.rm=TRUE)
-  tmp <- rowSums((1 - wPerGroup/wTot)^2/(nPerGroup - 1), na.rm=TRUE) / (nGroups^2 - 1)
+  tmp <- rowSums((1 - wPerGroup/wTot)^2/(nPerGroup - 1), na.rm=TRUE) / (nGroups*nGroups - 1)
   dfr <- 1/(3*tmp)
   dft <- nGroups-1
 

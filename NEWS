@@ -1,6 +1,21 @@
 Package: matrixTests
 ====================
 
+Version 0.1.5 [2019 Jul 09]
+
+NEW FEATURES:
+
+o Added F-test for variance: `row_f_var` and it's column equivalent.
+
+IMPROVEMENTS:
+
+o Various speed improvements across all types of tests.
+
+TESTS:
+
+o Added missing tests for warnings about NA values in "group" argument.
+
+
 Version: 0.1.4 [2019 Jun 25]
 
 IMPROVEMENTS:

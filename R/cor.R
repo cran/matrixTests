@@ -85,17 +85,20 @@ row_cor_pearson <- function(x, y, alternative="two.sided", conf.level=0.95) {
 
   mu <- rep(0, length.out=nrow(x)) # can't be changed because different test should be used in that case.
 
-  x[is.na(y)] <- NA
-  y[is.na(x)] <- NA
+  isna <- is.na(x+y)
+  x[isna] <- NA
+  y[isna] <- NA
 
-  ns <- matrixStats::rowCounts(!is.na(x))
+  ns <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(isna)
 
   mx <- rowMeans(x, na.rm=TRUE)
   my <- rowMeans(y, na.rm=TRUE)
-  sx <- sqrt(rowSums((x-mx)^2, na.rm=TRUE) / (ns-1))
-  sy <- sqrt(rowSums((y-my)^2, na.rm=TRUE) / (ns-1))
+  x  <- x - mx
+  y  <- y - my
+  sx <- sqrt(rowSums(x * x, na.rm=TRUE) / (ns-1))
+  sy <- sqrt(rowSums(y * y, na.rm=TRUE) / (ns-1))
 
-  rs <- rowSums((x-mx)*(y-my), na.rm=TRUE) / (sx*sy*(ns-1))
+  rs <- rowSums(x * y, na.rm=TRUE) / (sx*sy*(ns-1))
   rs[abs(rs - 1) < .Machine$double.eps^0.5] <- 1  # if not different from 1 use 1
   rs[abs(rs + 1) < .Machine$double.eps^0.5] <- -1 # if not different from -1 use -1
   df <- ns-2

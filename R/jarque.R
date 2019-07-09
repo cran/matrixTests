@@ -41,13 +41,13 @@ row_jarquebera <- function(x) {
   assert_numeric_mat_or_vec(x)
 
 
-  n    <- matrixStats::rowCounts(!is.na(x))
+  n    <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
   m0   <- x - rowMeans(x, na.rm=TRUE)
-  m2   <- rowMeans(m0^2, na.rm=TRUE)
+  m2   <- rowMeans(m0*m0, na.rm=TRUE)
   m3   <- rowMeans(m0^3, na.rm=TRUE)
   m4   <- rowMeans(m0^4, na.rm=TRUE)
-  skew <- (m3 / m2^(3/2))
-  kurt <- (m4 / m2^2)
+  skew <- (m3 / m2^(1.5))
+  kurt <- (m4 / (m2*m2))
 
   ksq  <- n * skew^2/6 + n * (kurt-3)^2/24
   df   <- rep.int(2, length(n))

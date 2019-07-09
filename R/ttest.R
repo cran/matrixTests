@@ -40,7 +40,7 @@
 #' A single number or numeric vector with values for each observation.
 #' @param conf.level confidence levels used for the confidence intervals.
 #' A single number or a numeric vector with values for each observation.
-#' All values must be in the range of [0;1].
+#' All values must be in the range of [0:1].
 #'
 #' @return a data.frame where each row contains the results of a t.test
 #' performed on the corresponding row/column of x.
@@ -126,8 +126,8 @@ row_t_equalvar <- function(x, y, alternative="two.sided", mu=0, conf.level=0.95)
   mys  <- rowMeans(y, na.rm=TRUE)
   mxys <- mxs - mys
 
-  nxs  <- matrixStats::rowCounts(!is.na(x))
-  nys  <- matrixStats::rowCounts(!is.na(y))
+  nxs  <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
+  nys  <- rep.int(ncol(y), nrow(y)) - matrixStats::rowCounts(is.na(y))
   nxys <- nxs + nys
 
   vxs <- rowSums((x-mxs)^2, na.rm=TRUE) / (nxs-1)
@@ -225,17 +225,18 @@ row_t_welch <- function(x, y, alternative="two.sided", mu=0, conf.level=0.95) {
   mys  <- rowMeans(y, na.rm=TRUE)
   mxys <- mxs - mys
 
-  nxs  <- matrixStats::rowCounts(!is.na(x))
-  nys  <- matrixStats::rowCounts(!is.na(y))
+  nxs  <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
+  nys  <- rep.int(ncol(y), nrow(y)) - matrixStats::rowCounts(is.na(y))
   nxys <- nxs + nys
 
   vxs <- rowSums((x-mxs)^2, na.rm=TRUE) / (nxs-1)
   vys <- rowSums((y-mys)^2, na.rm=TRUE) / (nys-1)
 
-  stderxs <- sqrt(vxs/nxs)
-  stderys <- sqrt(vys/nys)
-  stders  <- sqrt(stderxs^2 + stderys^2)
-  dfs     <- stders^4/(stderxs^4/(nxs - 1) + stderys^4/(nys - 1))
+  stderxs <- vxs/nxs
+  stderys <- vys/nys
+  stders  <- stderxs + stderys
+  dfs     <- stders*stders / (stderxs*stderxs/(nxs - 1) + stderys*stderys/(nys - 1))
+  stders  <- sqrt(stders)
 
   tres <- do_ttest(mxys, mu, stders, alternative, dfs, conf.level)
 
@@ -302,8 +303,8 @@ row_t_onesample <- function(x, alternative="two.sided", mu=0, conf.level=0.95) {
   assert_all_in_closed_interval(conf.level, 0, 1)
 
 
+  nxs <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
   mxs <- rowMeans(x, na.rm=TRUE)
-  nxs <- matrixStats::rowCounts(!is.na(x))
   vxs <- rowSums((x-mxs)^2, na.rm=TRUE) / (nxs-1)
   dfs <- nxs-1
   stders <- sqrt(vxs/nxs)
@@ -390,9 +391,9 @@ row_t_paired <- function(x, y, alternative="two.sided", mu=0, conf.level=0.95) {
   mys  <- rowMeans(y, na.rm=TRUE)
   mxys <- rowMeans(xy, na.rm=TRUE)
 
-  nxs  <- matrixStats::rowCounts(!is.na(x))
-  nys  <- matrixStats::rowCounts(!is.na(y))
-  nxys <- matrixStats::rowCounts(!is.na(xy))
+  nxs  <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
+  nys  <- rep.int(ncol(y), nrow(y)) - matrixStats::rowCounts(is.na(y))
+  nxys <- rep.int(ncol(xy), nrow(xy)) - matrixStats::rowCounts(is.na(xy))
 
   vxs <- rowSums((x-mxs)^2, na.rm=TRUE) / (nxs-1)
   vxs[nxs < 2] <- NA
