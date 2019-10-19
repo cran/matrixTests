@@ -234,3 +234,52 @@ do_pearson <- function(r, df, alt, conf) {
 
   res
 }
+
+
+# Obtain statistics for linear regression
+do_regression <- function(Y, X) {
+  betas <- matrix(NA, nrow=3, ncol=nrow(Y))
+  dfmod <- numeric(nrow(Y))
+  dfres <- numeric(nrow(Y))
+  sstot <- numeric(nrow(Y))
+  ssres <- numeric(nrow(Y))
+  rsqs  <- numeric(nrow(Y))
+  fs    <- numeric(nrow(Y))
+
+  nainds <- is.na(Y)
+  groups <- rowSums(nainds)
+  if(any(groups != 0)) {
+    categ <- lapply(split(nainds[groups!=0,,drop=FALSE], row(nainds[groups!=0,,drop=FALSE])), which)
+    groups[groups!=0] <- match(categ, unique(categ))
+  }
+  for(g in unique(groups)) {
+    rowinds <- groups == g
+    colinds <- !nainds[match(g, groups),]
+    y   <- Y[rowinds,colinds,drop=FALSE]
+    res <- stats::.lm.fit(X[colinds,,drop=FALSE], t(y))
+
+    betas[,rowinds] <- res$coefficients
+    betas[,rowinds][abs(betas[,rowinds]) < .Machine$double.eps] <- 0
+
+    dfres[rowinds] <- sum(colinds) - res$rank
+    dfmod[rowinds] <- res$rank - 1
+
+    sstot[rowinds] <- rowSums((y - rowMeans(y, na.rm=TRUE))^2, na.rm=TRUE)
+    sstot[rowinds][sstot[rowinds] < .Machine$double.eps] <- 0
+    ssres[rowinds] <- colSums(res$residuals^2, na.rm=TRUE)
+    ssres[rowinds][ssres[rowinds] < .Machine$double.eps] <- 0
+    isequal <- abs(ssres[rowinds]-sstot[rowinds]) < .Machine$double.eps^0.5
+    ssres[rowinds][isequal] <- sstot[rowinds][isequal]
+    rsqs[rowinds] <- 1 - (ssres[rowinds]/sstot[rowinds])
+
+    ssmod <- sstot[rowinds] - ssres[rowinds]
+    msres <- ssres[rowinds] / dfres[rowinds]
+    msmod <- ssmod / dfmod[rowinds]
+    fs[rowinds] <- msmod / msres
+  }
+
+  ps <- stats::pf(fs, dfmod, dfres, lower.tail=FALSE)
+
+  list(betas=betas, stats=data.frame(dfmod=dfmod, dfres=dfres, sstot=sstot, ssres=ssres, rsq=rsqs, f=fs, p=ps))
+}
+
