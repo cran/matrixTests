@@ -1,9 +1,9 @@
-4dd8c229d6c77260d40a6f00e6f978f3 *DESCRIPTION
+927555a16c6251d4b3ef93495511ac10 *DESCRIPTION
 002ee7c7838d2ff17e92564f792190c3 *NAMESPACE
-fafda9efb175961b62e204d655a7f796 *NEWS
+a45f0e22ea2517e79839b9a3fe3e16ff *NEWS
 1c22c03b274b88ce95c12c176ed106ac *R/bartlett.R
 2da03b09b7cf9fedcdfa4a4f0edd734e *R/cor.R
-fdbf2dfc9a7469a6539acad16dcf91fb *R/cosinor.R
+48e9d3c38ac99d82586adbf542de1365 *R/cosinor.R
 af08b4962dd88ea1f6cd7af1ff31aa37 *R/fligner.R
 f1aa8146eda7382fd42009dbca192b38 *R/fvar.R
 40d2fe77ec8715f70bebbbda9366ecd8 *R/ievora.R
@@ -36,7 +36,7 @@ c2c29ab3cb80a49921732c0a9ffce045 *inst/benchmarks/row_wilcoxon_onesample.R
 a1924f6a6bd19ed7655a4dd8d73361b7 *inst/benchmarks/row_wilcoxon_twosample.R
 ab076513423fcea7c2ea572389955628 *man/bartlett.Rd
 6b88124e5e1262e7a55ba0c378961adf *man/cortest.Rd
-67e2ebffec3fd2b1b10855b9de0ee70f *man/cosinor.Rd
+4c7c8be69a5218d17e1758c37be688bc *man/cosinor.Rd
 a33650d9ee8be10a9c3be4b011e7ef62 *man/fligner.Rd
 ffc2ee2e36c2d32d7451b08521458c72 *man/fvar.Rd
 3720887e8490ec7d7c35e4a756a4ad46 *man/ievora.Rd
@@ -52,7 +52,7 @@ e81be500a68fe63e22da5c66be283655 *tests/testthat/test-correct-bartlett.R
 7da94c1c97d9f1dc001545ce779dc62e *tests/testthat/test-correct-brownforsythe.R
 366c0500d5c6b327bd787b56fd3b0307 *tests/testthat/test-correct-cor_pearson.R
 dfd06aeaed0f6bfac1dad157c9e0814d *tests/testthat/test-correct-cosinor.R
-770f4c3616cebae462b499c46fb89ddb *tests/testthat/test-correct-flignerkilleen.R
+9b988826352114d830221c1e80111882 *tests/testthat/test-correct-flignerkilleen.R
 abd4b04752af3e0c56d849a023daec8a *tests/testthat/test-correct-ftest_var.R
 37ed1c85a95010fb9c9f7656ca1553d1 *tests/testthat/test-correct-ievora.R
 4f69c4f5046e35d2f2a5bf06819700a7 *tests/testthat/test-correct-jarquebera.R
@@ -66,7 +66,7 @@ fbbeacf650558249a54222566e32a7cc *tests/testthat/test-correct-ttest_paired.R
 7c066c1c1d5c6d383287cd4eb923a514 *tests/testthat/test-correct-ttest_welch.R
 d5b8c5a58a7747ea24ae73a4215be33a *tests/testthat/test-correct-wilcoxon-onesample.R
 51f660818c526b7042c9f1c9228ceea9 *tests/testthat/test-correct-wilcoxon-paired.R
-dc6de7aa632f741937c2646e86df8a7f *tests/testthat/test-correct-wilcoxon-twosample.R
+cc805fb0b17eb5c4d4a0ae603c7ebd13 *tests/testthat/test-correct-wilcoxon-twosample.R
 270a3d02b5f828b9d26f5d154e86104b *tests/testthat/test-parameters-main-errors.R
 653fa29a5d819471c9ee6f07babad756 *tests/testthat/test-parameters-optional-errors.R
 22880922c4df91152825c9856a0d4095 *tests/testthat/test-parameters-special-cases.R
