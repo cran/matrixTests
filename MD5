@@ -1,4 +1,4 @@
-dd03b39a8e904126b5c38c6316d69948 *DESCRIPTION
+b5386d4cb5b408d9d147379bdf0b0d02 *DESCRIPTION
 e7278fd02a6493ddd420668566dcf373 *NAMESPACE
 494d0b621f81b10a5a9f9a4a56a52a14 *NEWS
 1c22c03b274b88ce95c12c176ed106ac *R/bartlett.R
@@ -15,7 +15,7 @@ f1aa8146eda7382fd42009dbca192b38 *R/fvar.R
 8c06e90ebe2011d823a9e7ab2d7140a8 *R/utils.asserts.R
 0906f4a6fb9c73d8a49afb373af42696 *R/utils.general.R
 4a92b1000119e60e8ab700cdd3015e01 *R/utils.tests.R
-e5fa19537bd75488c374a7149bb00c1a *R/waerden.R
+98975ff23a452b3b292dc2ef2692e880 *R/waerden.R
 bc7fe69b5b091d17afcc818bf604b297 *R/wilcox.R
 8afa93a2acc1ec7cb2c7d238d680b95a *inst/benchmarks/R/plot.R
 b1649db104426bfff02beb9055b6e9f9 *inst/benchmarks/row_bartlett.R
@@ -32,7 +32,7 @@ eac59fbaa51a8feb11cf57037f923a85 *inst/benchmarks/row_oneway_welch.R
 871f871a6b819a39a8141a35c6d87666 *inst/benchmarks/row_t_onesample.R
 b9a74c7bbe4f97744eb7469254805415 *inst/benchmarks/row_t_paired.R
 9da103fa273245532469b956b5050e69 *inst/benchmarks/row_t_welch.R
-e067d1be9fc29bc0bc515ce3c414ad6e *inst/benchmarks/row_waerden.R
+dbdb298b9cd5ae6cd5a9218743d9307f *inst/benchmarks/row_waerden.R
 c2c29ab3cb80a49921732c0a9ffce045 *inst/benchmarks/row_wilcoxon_onesample.R
 89b6f66eff0fd2527ec2efdd0fc676cd *inst/benchmarks/row_wilcoxon_paired.R
 a1924f6a6bd19ed7655a4dd8d73361b7 *inst/benchmarks/row_wilcoxon_twosample.R
@@ -47,7 +47,7 @@ bbaaca77c020995b5282765fbebb91c5 *man/jarquebera.Rd
 b684686cfa6c1cc7b901e6ed74e68e6c *man/levene.Rd
 e371c58784dfa3833629471f6f586088 *man/oneway.Rd
 ea7cbe1c9dc66fc8cbdd57b6d042751a *man/ttest.Rd
-f7850178f21b208eeac0e7aa7f6d48e7 *man/waerden.Rd
+c383f09aea5f0ea04118b656008c2592 *man/waerden.Rd
 a43b3cf50090ada2830593785baa6b15 *man/wilcoxon.Rd
 6baada81a66c253b3646ec18e7e0c915 *tests/testthat.R
 9a9e2dab8de1e2874c26e8f003620d69 *tests/testthat/test-col-versions.R
@@ -67,7 +67,7 @@ a5287b063fd2d58b9a572f15081abbec *tests/testthat/test-correct-levene.R
 54910e24a6f333ee5e51ee78b4cb6bbc *tests/testthat/test-correct-ttest_onesample.R
 fbbeacf650558249a54222566e32a7cc *tests/testthat/test-correct-ttest_paired.R
 7c066c1c1d5c6d383287cd4eb923a514 *tests/testthat/test-correct-ttest_welch.R
-617a49e274e1335540547381db293dd3 *tests/testthat/test-correct-waerden.R
+eb954c724f0dcde66c432b412a79dfd3 *tests/testthat/test-correct-waerden.R
 d5b8c5a58a7747ea24ae73a4215be33a *tests/testthat/test-correct-wilcoxon-onesample.R
 51f660818c526b7042c9f1c9228ceea9 *tests/testthat/test-correct-wilcoxon-paired.R
 cc805fb0b17eb5c4d4a0ae603c7ebd13 *tests/testthat/test-correct-wilcoxon-twosample.R
