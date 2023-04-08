@@ -10,20 +10,26 @@ do_ttest <- function(mx, mu, stder, alt, df, conf) {
   inds <- alt=="less"
   if(any(inds)) {
     res[inds,2] <- stats::pt(res[inds,1], df[inds])
-    res[inds,3] <- rep(-Inf, sum(inds))
+
+    inds <- inds & !is.na(conf)
+    res[inds,3] <- rep.int(-Inf, sum(inds))
     res[inds,4] <- res[inds,1] + stats::qt(conf[inds], df[inds])
   }
 
   inds <- alt=="greater"
   if(any(inds)) {
     res[inds,2] <- stats::pt(res[inds,1], df[inds], lower.tail=FALSE)
+
+    inds <- inds & !is.na(conf)
     res[inds,3] <- res[inds,1] - stats::qt(conf[inds], df[inds])
-    res[inds,4] <- rep(Inf, sum(inds))
+    res[inds,4] <- rep.int(Inf, sum(inds))
   }
 
   inds <- alt=="two.sided"
   if(any(inds)) {
     res[inds,2] <- 2 * stats::pt(-abs(res[inds,1]), df[inds])
+
+    inds <- inds & !is.na(conf)
     intrange    <- stats::qt(1 - (1-conf[inds])*0.5, df[inds])
     res[inds,3] <- res[inds,1] - intrange
     res[inds,4] <- res[inds,1] + intrange
@@ -47,6 +53,8 @@ do_ftest <- function(est, rat, alt, df1, df2, conf) {
   inds <- alt=="less"
   if(any(inds)) {
     res[inds,2] <- stats::pf(res[inds,1], df1[inds], df2[inds])
+
+    inds <- inds & !is.na(conf)
     res[inds,3] <- 0
     res[inds,4] <- est[inds] / stats::qf(1 - conf[inds], df1[inds], df2[inds])
   }
@@ -54,6 +62,8 @@ do_ftest <- function(est, rat, alt, df1, df2, conf) {
   inds <- alt=="greater"
   if(any(inds)) {
     res[inds,2] <- 1 - stats::pf(res[inds,1], df1[inds], df2[inds])
+
+    inds <- inds & !is.na(conf)
     res[inds,3] <- est[inds] / stats::qf(conf[inds], df1[inds], df2[inds])
     res[inds,4] <- Inf
   }
@@ -61,8 +71,10 @@ do_ftest <- function(est, rat, alt, df1, df2, conf) {
   inds <- alt=="two.sided"
   if(any(inds)) {
     pval <- stats::pf(res[inds,1], df1[inds], df2[inds])
-    beta <- (1 - conf[inds]) * 0.5
     res[inds,2] <- 2 * pmin(pval, 1 - pval)
+
+    inds <- inds & !is.na(conf)
+    beta <- (1 - conf[inds]) * 0.5
     res[inds,3] <- est[inds] / stats::qf(1-beta, df1[inds], df2[inds])
     res[inds,4] <- est[inds] / stats::qf(beta, df1[inds], df2[inds])
   }
@@ -72,29 +84,29 @@ do_ftest <- function(est, rat, alt, df1, df2, conf) {
 
 
 do_wilcox_1_exact <- function(stat, n, alt) {
-  res <- rep(NA_integer_, length(stat))
+  res <- rep.int(NA_real_, length(stat))
 
   case <- stat > (n * (n+1)*0.25)
 
-
-  inds <- alt=="two.sided" & case
+  # if n == 0 then we leave p-value as NA, hence: n!=0
+  inds <- alt=="two.sided" & n!=0 & case
   if(any(inds)) {
     res[inds] <- stats::psignrank(stat[inds]-1, n[inds], lower.tail=FALSE)
     res[inds] <- pmin(2*res[inds], 1)
   }
 
-  inds <- alt=="two.sided" & !case
+  inds <- alt=="two.sided" & n!=0 & !case
   if(any(inds)) {
     res[inds] <- stats::psignrank(stat[inds], n[inds])
     res[inds] <- pmin(2*res[inds], 1)
   }
 
-  inds <- alt=="less"
+  inds <- alt=="less" & n!=0
   if(any(inds)) {
     res[inds] <- stats::psignrank(stat[inds], n[inds])
   }
 
-  inds <- alt=="greater"
+  inds <- alt=="greater" & n!=0
   if(any(inds)) {
     res[inds] <- stats::psignrank(stat[inds]-1, n[inds], lower.tail=FALSE)
   }
@@ -103,10 +115,10 @@ do_wilcox_1_exact <- function(stat, n, alt) {
 }
 
 do_wilcox_1_approx <- function(stat, n, alt, nties, correct) {
-  res <- rep(NA_integer_, length(stat))
+  res <- rep.int(NA_real_, length(stat))
 
   z <- stat - n * (n+1)*0.25
-  correction <- rep(0, length(stat))
+  correction <- rep.int(0, length(stat))
   correction[correct & alt=="two.sided"] <- sign(z[correct & alt=="two.sided"]) * 0.5
   correction[correct & alt=="greater"]   <- 0.5
   correction[correct & alt=="less"   ]   <- -0.5
@@ -135,29 +147,30 @@ do_wilcox_1_approx <- function(stat, n, alt, nties, correct) {
 }
 
 do_wilcox_2_exact <- function(stat, nx, ny, alt) {
-  res <- rep(NA_integer_, length(stat))
+  res <- rep.int(NA_real_, length(stat))
 
   case <- stat > (nx*ny*0.5)
 
 
-  inds <- alt=="two.sided" & case
+  # if nx == 0 or ny == 0 then we leave p-value as NA, hence: nx!=0 & ny!=0
+  inds <- alt=="two.sided" & nx!=0 & ny!=0 & case
   if(any(inds)) {
     res[inds] <- stats::pwilcox(stat[inds]-1, nx[inds], ny[inds], lower.tail=FALSE)
     res[inds] <- pmin(2*res[inds], 1)
   }
 
-  inds <- alt=="two.sided" & !case
+  inds <- alt=="two.sided" & nx!=0 & ny!=0 & !case
   if(any(inds)) {
     res[inds] <- stats::pwilcox(stat[inds], nx[inds], ny[inds])
     res[inds] <- pmin(2*res[inds], 1)
   }
 
-  inds <- alt=="greater"
+  inds <- alt=="greater" & nx!=0 & ny!=0
   if(any(inds)) {
     res[inds] <- stats::pwilcox(stat[inds]-1, nx[inds], ny[inds], lower.tail=FALSE)
   }
 
-  inds <- alt=="less"
+  inds <- alt=="less" & nx!=0 & ny!=0
   if(any(inds)) {
     res[inds] <- stats::pwilcox(stat[inds], nx[inds], ny[inds])
   }
@@ -166,10 +179,10 @@ do_wilcox_2_exact <- function(stat, nx, ny, alt) {
 }
 
 do_wilcox_2_approx <- function(stat, nx, ny, alt, nties, correct) {
-  res <- rep(NA_integer_, length(stat))
+  res <- rep.int(NA_real_, length(stat))
 
   z <- stat - nx*ny*0.5
-  correction <- rep(0, length(stat))
+  correction <- rep.int(0, length(stat))
   correction[correct & alt=="two.sided"] <- sign(z[correct & alt=="two.sided"]) * 0.5
   correction[correct & alt=="greater"]   <- 0.5
   correction[correct & alt=="less"   ]   <- -0.5
@@ -211,20 +224,26 @@ do_pearson <- function(r, df, alt, conf) {
   inds <- alt=="less"
   if(any(inds)) {
     res[inds,2] <- stats::pt(res[inds,1], df[inds])
-    res[inds,3] <- rep(-Inf, sum(inds))
+
+    inds <- inds & !is.na(conf)
+    res[inds,3] <- rep.int(-Inf, sum(inds))
     res[inds,4] <- z[inds] + sigma[inds] * stats::qnorm(conf[inds])
   }
 
   inds <- alt=="greater"
   if(any(inds)) {
     res[inds,2] <- stats::pt(res[inds,1], df[inds], lower.tail=FALSE)
+
+    inds <- inds & !is.na(conf)
     res[inds,3] <- z[inds] - sigma[inds] * stats::qnorm(conf[inds])
-    res[inds,4] <- rep(Inf, sum(inds))
+    res[inds,4] <- rep.int(Inf, sum(inds))
   }
 
   inds <- alt=="two.sided"
   if(any(inds)) {
     res[inds,2] <- 2 * pmin(stats::pt(res[inds,1], df[inds]), stats::pt(res[inds,1], df[inds], lower.tail=FALSE))
+
+    inds <- inds & !is.na(conf)
     res[inds,3] <- z[inds] + -sigma[inds] * stats::qnorm((1 + conf[inds])*0.5)
     res[inds,4] <- z[inds] + sigma[inds] * stats::qnorm((1 + conf[inds])*0.5)
   }

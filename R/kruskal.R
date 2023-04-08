@@ -1,4 +1,4 @@
-#' Kruskal-Wallis Rank Sum Test
+#' Kruskal-Wallis rank sum test
 #'
 #' Performs a Kruskal-Wallis rank sum test on each row/column of the input matrix.
 #'
@@ -10,7 +10,7 @@
 #'
 #' @param x numeric matrix.
 #' @param g a vector specifying group membership for each observation of x.
-
+#'
 #' @return a data.frame where each row contains the results of a Kruskal-Wallis
 #' test performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
@@ -30,8 +30,8 @@
 #' @name kruskalwallis
 #' @export
 row_kruskalwallis <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -43,49 +43,51 @@ row_kruskalwallis <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
 
   ranks <- matrixStats::rowRanks(x, ties.method="average")
 
-  ties <- rowTies(ranks)
+  ties <- rowRankTies(ranks)
 
   nPerGroup <- matrix(numeric(), nrow=nrow(x), ncol=length(unique(g)))
   rPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     inds <- g == unique(g)[i]
     tmpx <- x[,inds, drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     rPerGroup[,i] <- rowSums(ranks[,inds, drop=FALSE], na.rm=TRUE)
   }
 
   nSamples <- rowSums(nPerGroup)
   nGroups  <- matrixStats::rowCounts(nPerGroup!=0)
 
+  df <- nGroups - 1
+
   st0 <- rowSums(rPerGroup*rPerGroup/nPerGroup, na.rm=TRUE)
   st1 <- 12*st0 / (nSamples * (nSamples + 1)) - 3 * (nSamples + 1)
   st2 <- 1 - rowSums(ties^3 - ties) / (nSamples^3 - nSamples)
   stat <- st1/st2
-  df <- nGroups - 1
 
   p <- stats::pchisq(stat, df, lower.tail=FALSE)
 
 
   w1 <- nSamples < 2
-  showWarning(w1, 'had less than 2 total observations')
+  showWarning(w1, 'kruskalwallis', 'had less than 2 total observations')
 
   w2 <- !w1 & nGroups < 2
-  showWarning(w2, 'had less than 2 groups with enough observations')
+  showWarning(w2, 'kruskalwallis', 'had less than 2 groups with enough observations')
 
-  w3 <- !w1 & !w2 & ties[,1]==nSamples
-  showWarning(w3, 'were essentially constant')
+  w3 <- !w1 & !w2 & matrixStats::rowMaxs(ties)==nSamples
+  showWarning(w3, 'kruskalwallis', 'had essentially constant values')
 
+  df[w1 | w2 | w3]   <- NA
   stat[w1 | w2 | w3] <- NA
   p[w1 | w2 | w3]    <- NA
 

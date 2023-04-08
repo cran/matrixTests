@@ -1,4 +1,4 @@
-#' Van der Waerden Test
+#' Van der Waerden test
 #'
 #' Performs van der Waerden test on each row/column of the input matrix.
 #'
@@ -7,7 +7,7 @@
 #'
 #' @param x numeric matrix.
 #' @param g a vector specifying group membership for each observation of x.
-
+#'
 #' @return a data.frame where each row contains the results of van det Waerden
 #' test performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
@@ -27,8 +27,8 @@
 #' @name waerden
 #' @export
 row_waerden <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -40,18 +40,18 @@ row_waerden <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
 
-
   r <- matrixStats::rowRanks(x, ties.method="average")
-  n <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
+  n <- ncol(x) - matrixStats::rowCounts(x, value=NA)
   z <- stats::qnorm(r/(n+1))
   z <- matrix(z, nrow=nrow(x), ncol=ncol(x))
 
@@ -59,28 +59,29 @@ row_waerden <- function(x, g) {
   sPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- z[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     sPerGroup[,i] <- rowSums(tmpx, na.rm=TRUE)
   }
 
   nGroups <- matrixStats::rowCounts(nPerGroup!=0)
 
   s2   <- rowSums(z^2, na.rm=TRUE) / (n - 1)
-  stat <- rowSums(sPerGroup^2 / nPerGroup) / s2
+  stat <- rowSums(sPerGroup^2 / nPerGroup, na.rm=TRUE) / s2
 
   df <- nGroups - 1
   p  <- stats::pchisq(stat, df, lower.tail = FALSE)
 
 
   w1 <- n < 2
-  showWarning(w1, 'had less than 2 total observations')
+  showWarning(w1, 'waerden', 'had less than 2 total observations')
 
   w2 <- !w1 & nGroups < 2
-  showWarning(w2, 'had less than 2 groups with enough observations')
+  showWarning(w2, 'waerden', 'had less than 2 groups with enough observations')
 
   w3 <- !w1 & !w2 & s2==0
-  showWarning(w3, 'were essentially constant')
+  showWarning(w3, 'waerden', 'had essentially constant values')
 
+  df[w1 | w2 | w3]   <- NA
   stat[w1 | w2 | w3] <- NA
   p[w1 | w2 | w3]    <- NA
 

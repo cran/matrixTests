@@ -1,7 +1,43 @@
 Package: matrixTests
 ====================
 
-Version 0.1.9 [2020 April 30]
+Version 0.2.0 [2023 Apr 07]
+
+NEW FEATURES:
+
+ * Added Anderson Darling test: `row_andersondarling` and `col_andersondarling`.
+ * Setting conf.level to NA now turns off confidence intervals and improves computation speed.
+
+BUG FIXES:
+
+ * Wilcoxon two-sample test no longer causes integer overflow on large sample sizes.
+ * Waerden and Flinger-Killeen tests no longer produce NA results when a whole group has only NA values in x.
+ * Wilcoxon tests no longer produce double warning messages when some rows have no remaining observations.
+ * Paired t-test no longer returns var.diff = 0 when all paired observations are missing.
+ * Warnings are now more robust in correctly deciding between row and column messages.
+
+CHANGES:
+
+ * Null-mean and null-ratio arguments are now more consistent across functions: previously named `mu` and `ratio`, now consistently named `null`.
+ * The position of `null` argument is now more consistent across functions: `null` always comes before the `alternative` argument.
+ * `row_ievora` and `col_ievora` functions are removed. ievora method is a simple application of a Bartlett's test followed by a Student's t-test and can be performed manually.
+ * `Inf` values in `wilcox_*` tests are no longer removed but treated as highest ranks in order to be consistent with base R 4.0.0. implementation.
+ * Cosinor gets a separate warning for the case where all observations come from the same time-point within the specified period.
+ * Missing argument errors no longer reference `force()` in their error messages.
+ * Warning message about constant values in rows are now consistent between tests.
+ * Warning message about too few remaining observations are now more consistent between wilcoxon and t tests.
+ * When a test cannot be executed all test-specific outputs (test statistic, standard error, and degrees of freedom, not just p-values and confidence intervals as before) are now turned to NA for that row/column.
+
+INTERNAL:
+
+ * Slightly improved the speed of all tests in cases with sample sizes bigger than 100.
+ * Improved the speed of Wilcox tests, specially in cases with ties.
+ * van der Waerden test is now aligned and tested against `PMCMRplus::vanWaerdenTest()` (previously `PMCMR::vanWaerden.test()`).
+ * matrixTests no longer depends on `testthat` for unit tests.
+ * All unit tests are rewritten.
+
+
+Version 0.1.9 [2020 Apr 30]
 
 NEW FEATURES:
 
@@ -16,7 +52,7 @@ Version 0.1.8 [2020 Jan 08]
 
 INTERNAL:
 
- * Adjusted tests to conform with changes in R-devel 4.0.0 for CRAN.
+ * Adjusted unit tests to conform with changes in R-devel 4.0.0 for CRAN.
 
 
 Version 0.1.7 [2019 Nov 05]
@@ -92,7 +128,7 @@ CHANGES:
 
 INTERNAL:
 
- * Fixed an indexing bug in `row_cor_pearson()` monte-carlo test.
+ * Fixed an indexing bug in `row_cor_pearson()` monte-carlo unit testing step.
 
 DOCUMENTATION:
 

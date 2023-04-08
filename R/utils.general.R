@@ -1,55 +1,44 @@
 rowVars <- function(x, n=NULL, m=NULL, na.rm=FALSE) {
   if(is.null(n))
-    n <- rep.int(ncol(x), nrow(x)) - rowSums(is.na(x))
+    n <- ncol(x) - matrixStats::rowCounts(x, value=NA)
   if(is.null(m))
     m <- rowMeans(x, na.rm=na.rm)
   res <- rowSums((x-m)^2, na.rm=na.rm) / (n-1)
-  res[n <= 0] <- NA
+  res[n <= 1] <- NA
+  res[!is.finite(m)] <- NaN
   res
 }
 
-rowTies <- function(x) {
-  dupRows <- apply(x, 1, anyDuplicated, incomparables=NA) != 0
-  if(any(dupRows)) {
-    dups <- matrix(FALSE, nrow=nrow(x), ncol=ncol(x))
-    dups[dupRows,] <- t(apply(x[dupRows,,drop=FALSE], 1, duplicated, incomparables=NA))
-    dups <- cbind(which(dups, arr.ind=TRUE), val=x[dups])
-    dups <- dups[order(dups[,1], dups[,3]),,drop=FALSE]
-
-    sp <- split(dups[,3], dups[,1])
-    sp <- lapply(sp, function(x) rle(x)$length+1)
-    cl <- lapply(sp, seq_along)
-
-    dups <- cbind(rep(unique(dups[,1]), lengths(sp)),
-                  unlist(cl),
-                  unlist(sp)
-                  )
-
-    res <- matrix(0L, nrow=nrow(x), ncol=max(dups[,2]))
-    res[dups[,1:2,drop=FALSE]] <- dups[,3]
-  } else {
-    res <- matrix(0L, nrow=nrow(x), ncol=1)
+rowRankTies <- function(r) {
+  if(storage.mode(r) != "integer") {
+    storage.mode(r) <- "integer"
   }
-  res
+  r <- t(r)
+  res <- vector("list", ncol(r))
+  for(i in seq_len(ncol(r))) {
+    res[[i]] <- tabulate(r[,i], nrow(r))
+  }
+  if(length(res) == 0) {  # needed to work with zero-row inputs
+    res <- list(integer())
+  }
+  do.call(rbind, res)
 }
 
-showWarning <- function(isWarning, err) {
-  if(any(isWarning, na.rm=TRUE)) {
-    parentFun <- deparse(as.list(sys.call(-1))[[1]])
-    grandFun  <- as.list(sys.call(-2))
-    if(length(grandFun) > 0) {
-      grandFun <- deparse(grandFun[[1]])
-      if(grandFun %in% getNamespaceExports("matrixTests")) {
-        parentFun <- grandFun
-      }
+showWarning <- function(w, fname, msg) {
+  if(any(w, na.rm=TRUE)) {
+    callstack <- paste(deparse(sys.calls()), collapse="")
+    if(grepl(paste0("col_", fname), callstack)) {
+      fname  <- paste0("col_", fname)
+      prefix <- "column"
+    } else {
+      fname  <- paste0("row_", fname)
+      prefix <- "row"
     }
-    pref <- "row"
-    if(grepl("^col_", parentFun)) pref <- "column"
-    n <- sum(isWarning, na.rm=TRUE)
-    i <- match(TRUE, isWarning)
-    err <- paste0(parentFun, ": ", n, ' of the ', pref, 's ', err, ".",
-                  '\nFirst occurrence at ', pref, ' ', i
+    n <- sum(w, na.rm=TRUE)
+    i <- match(TRUE, w)
+    msg <- paste0(fname, ": ", n, ' of the ', prefix, 's ', msg, ".",
+                  '\nFirst occurrence at ', prefix, ' ', i
                   )
-    warning(err, call.=FALSE)
+    warning(msg, call.=FALSE)
   }
 }

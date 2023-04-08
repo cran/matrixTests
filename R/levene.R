@@ -40,8 +40,8 @@
 #' @name levene
 #' @export
 row_levene <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -53,11 +53,11 @@ row_levene <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
@@ -72,9 +72,9 @@ row_levene <- function(x, g) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
     tmpx <- abs(tmpx - rowMeans(tmpx, na.rm=TRUE))
     x[,g==unique(g)[i]] <- tmpx
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
-    vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
+    vPerGroup[,i] <- rowVars(tmpx, n=nPerGroup[,i], m=mPerGroup[,i], na.rm=TRUE)
   }
 
   nSamples <- rowSums(nPerGroup)
@@ -92,19 +92,22 @@ row_levene <- function(x, g) {
 
 
   w1 <- hasinfx
-  showWarning(w1, 'had infinite observations that were removed')
+  showWarning(w1, 'levene', 'had infinite observations that were removed')
 
   w2 <- nGroups < 2
-  showWarning(w2, 'had less than 2 groups with enough observations')
+  showWarning(w2, 'levene', 'had less than 2 groups with enough observations')
 
   w3 <- !w2 & all(nPerGroup < 3)
-  showWarning(w3, 'had no groups with at least 3 observations')
+  showWarning(w3, 'levene', 'had no groups with at least 3 observations')
 
   w4 <- !w2 & !w3 & withinScatter==0
-  showWarning(w4, 'had zero within group variance of absolute residuals from the mean')
+  showWarning(w4, 'levene', 'had zero within group variance of absolute residuals from the mean')
 
   w5 <- !w2 & !w3 & !w4 & withinScatter <= .Machine$double.eps
-  showWarning(w5, 'had essentially constant absolute residuals from the mean: results might be unreliable')
+  showWarning(w5, 'levene', 'had essentially constant absolute residuals from the mean: results might be unreliable')
+
+  dft[w2 | w3 | w4] <- NA
+  dfr[w2 | w3 | w4] <- NA
   F[w2 | w3 | w4] <- NA
   p[w2 | w3 | w4] <- NA
 
@@ -128,8 +131,8 @@ col_levene <- function(x, g) {
 #' @rdname levene
 #' @export
 row_brownforsythe <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -141,11 +144,12 @@ row_brownforsythe <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
@@ -160,9 +164,9 @@ row_brownforsythe <- function(x, g) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
     tmpx <- abs(tmpx - matrixStats::rowMedians(tmpx, na.rm=TRUE))
     x[,g==unique(g)[i]] <- tmpx
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
-    vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
+    vPerGroup[,i] <- rowVars(tmpx, n=nPerGroup[,i], m=mPerGroup[,i], na.rm=TRUE)
   }
 
   nSamples <- rowSums(nPerGroup)
@@ -179,21 +183,24 @@ row_brownforsythe <- function(x, g) {
   p <- stats::pf(F, dft, dfr, lower.tail=FALSE)
 
   w1 <- hasinfx
-  showWarning(w1, 'had infinite observations that were removed')
+  showWarning(w1, 'brownforsythe', 'had infinite observations that were removed')
 
   w2 <- nGroups < 2
-  showWarning(w2, 'had less than 2 groups with enough observations')
+  showWarning(w2, 'brownforsythe', 'had less than 2 groups with enough observations')
 
   w3 <- !w2 & all(nPerGroup < 3)
-  showWarning(w3, 'had no groups with at least 3 observations')
+  showWarning(w3, 'brownforsythe', 'had no groups with at least 3 observations')
 
   w4 <- !w2 & !w3 & withinScatter==0
-  showWarning(w4, 'had zero within group variance of absolute residuals from the median')
+  showWarning(w4, 'brownforsythe', 'had zero within group variance of absolute residuals from the median')
 
   w5 <- !w2 & !w3 & !w4 & withinScatter <= .Machine$double.eps
-  showWarning(w5, 'had essentially constant absolute residuals from the median: results might be unreliable')
-  F[w2 | w3 | w4] <- NA
-  p[w2 | w3 | w4] <- NA
+  showWarning(w5, 'brownforsythe', 'had essentially constant absolute residuals from the median: results might be unreliable')
+
+  dft[w2 | w3 | w4] <- NA
+  dfr[w2 | w3 | w4] <- NA
+  F[w2 | w3 | w4]   <- NA
+  p[w2 | w3 | w4]   <- NA
 
   rnames <- rownames(x)
   if(!is.null(rnames)) rnames <- make.unique(rnames)

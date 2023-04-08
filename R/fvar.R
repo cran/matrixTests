@@ -13,14 +13,14 @@
 #'
 #' @param x numeric matrix.
 #' @param y numeric matrix for the second group of observations.
-#' @param ratio - hypothesized 'x' and 'y' variance ratio.
+#' @param null - hypothesized 'x' and 'y' variance ratio.
 #' A single number or numeric vector with values for each observation.
 #' @param alternative alternative hypothesis to use for each row/column of x.
 #' A single string or a vector with values for each observation.
 #' Values must be one of "two.sided" (default), "greater" or "less".
 #' @param conf.level confidence levels used for the confidence intervals.
 #' A single number or a numeric vector with values for each observation.
-#' All values must be in the range of [0:1].
+#' All values must be in the range of [0:1] or NA.
 #'
 #' @return a data.frame where each row contains the results of the F variance
 #' test performed on the corresponding row/column of x and y.\cr\cr
@@ -41,6 +41,10 @@
 #' 14. alternative - chosen alternative hypothesis\cr
 #' 15. conf.level - chosen confidence level
 #'
+#' @note
+#' For a marked increase in computation speed turn off the calculation of
+#' confidence interval by setting \code{conf.level} to NA.
+#'
 #' @seealso \code{var.test()}
 #'
 #' @examples
@@ -51,9 +55,9 @@
 #' @author Karolis Koncevičius
 #' @name fvar
 #' @export
-row_f_var <- function(x, y, ratio=1, alternative="two.sided", conf.level=0.95) {
-  force(x)
-  force(y)
+row_f_var <- function(x, y, null=1, alternative="two.sided", conf.level=0.95) {
+  is.null(x)
+  is.null(y)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -75,22 +79,24 @@ row_f_var <- function(x, y, ratio=1, alternative="two.sided", conf.level=0.95) {
   assert_equal_nrow(x, y)
 
   if(length(alternative)==1)
-    alternative <- rep(alternative, length.out=nrow(x))
+    alternative <- rep.int(alternative, nrow(x))
   assert_character_vec_length(alternative, 1, nrow(x))
 
   choices <- c("two.sided", "less", "greater")
   alternative <- choices[pmatch(alternative, choices, duplicates.ok=TRUE)]
   assert_all_in_set(alternative, choices)
 
-  if(length(ratio)==1)
-    ratio <- rep(ratio, length.out=nrow(x))
-  assert_numeric_vec_length(ratio, 1, nrow(x))
-  assert_all_in_open_interval(ratio, 0, Inf)
+  if(length(null)==1)
+    null <- rep.int(null, nrow(x))
+  assert_numeric_vec_length(null, 1, nrow(x))
+  assert_all_in_open_interval(null, 0, Inf)
 
+  if(all(is.na(conf.level)))
+    conf.level[] <- NA_real_
   if(length(conf.level)==1)
-    conf.level <- rep(conf.level, length.out=nrow(x))
+    conf.level <- rep.int(conf.level, nrow(x))
   assert_numeric_vec_length(conf.level, 1, nrow(x))
-  assert_all_in_closed_interval(conf.level, 0, 1)
+  assert_all_in_closed_interval(conf.level, 0, 1, na.allow=TRUE)
 
 
   hasinfx <- is.infinite(x)
@@ -101,40 +107,42 @@ row_f_var <- function(x, y, ratio=1, alternative="two.sided", conf.level=0.95) {
   y[hasinfy] <- NA
   hasinfy <- rowSums(hasinfy) > 0
 
-  nxs  <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
-  nys  <- rep.int(ncol(y), nrow(y)) - matrixStats::rowCounts(is.na(y))
+  nxs  <- ncol(x) - matrixStats::rowCounts(x, value=NA)
+  nys  <- ncol(y) - matrixStats::rowCounts(y, value=NA)
   nxys <- nxs + nys
+
+  vxs <- rowVars(x, n=nxs, na.rm=TRUE)
+  vys <- rowVars(y, n=nys, na.rm=TRUE)
+
+  estimate  <- vxs/vys
 
   dfx <- nxs - 1
   dfy <- nys - 1
 
-  vxs <- rowVars(x, na.rm=TRUE)
-  vys <- rowVars(y, na.rm=TRUE)
-
-  estimate  <- vxs/vys
-
-  fres <- do_ftest(estimate, ratio, alternative, dfx, dfy, conf.level)
+  fres <- do_ftest(estimate, null, alternative, dfx, dfy, conf.level)
 
 
   w1 <- hasinfx
-  showWarning(w1, 'had infinite "x" observations that were removed')
+  showWarning(w1, 'f_var', 'had infinite "x" observations that were removed')
 
   w2 <- hasinfy
-  showWarning(w2, 'had infinite "y" observations that were removed')
+  showWarning(w2, 'f_var', 'had infinite "y" observations that were removed')
 
   w3 <- nxs <= 1
-  showWarning(w3, 'had less than 1 "x" observation')
+  showWarning(w3, 'f_var', 'had less than 1 "x" observation')
 
   w4 <- nys <= 1
-  showWarning(w4, 'had less than 1 "y" observation')
+  showWarning(w4, 'f_var', 'had less than 1 "y" observation')
 
   w5 <- vxs == 0
-  showWarning(w5, 'had zero variance in "x"')
+  showWarning(w5, 'f_var', 'had zero variance in "x"')
 
   w6 <- vys == 0
-  showWarning(w6, 'had zero variance in "y"')
+  showWarning(w6, 'f_var', 'had zero variance in "y"')
 
 
+  dfx[w3 | w4 | (w5 & w6)]   <- NA
+  dfy[w3 | w4 | (w5 & w6)]   <- NA
   fres[w3 | w4 | (w5 & w6),] <- NA
 
   rnames <- rownames(x)
@@ -142,14 +150,14 @@ row_f_var <- function(x, y, ratio=1, alternative="two.sided", conf.level=0.95) {
   data.frame(obs.x=nxs, obs.y=nys, obs.tot=nxys, var.x=vxs, var.y=vys,
              var.ratio=estimate, df.num=dfx, df.denom=dfy, statistic=fres[,1],
              pvalue=fres[,2], conf.low=fres[,3], conf.high=fres[,4],
-             ratio.null=ratio, alternative=alternative, conf.level=conf.level,
+             ratio.null=null, alternative=alternative, conf.level=conf.level,
              row.names=rnames, stringsAsFactors=FALSE
              )
 }
 
 #' @rdname fvar
 #' @export
-col_f_var <- function(x, y, ratio=1, alternative="two.sided", conf.level=0.95) {
-  row_f_var(t(x), t(y), ratio, alternative, conf.level)
+col_f_var <- function(x, y, null=1, alternative="two.sided", conf.level=0.95) {
+  row_f_var(t(x), t(y), null, alternative, conf.level)
 }
 

@@ -14,7 +14,7 @@
 #'
 #' @param x numeric matrix.
 #' @param g a vector specifying group membership for each observation of x.
-
+#'
 #' @return a data.frame where each row contains the results of the bartlett test
 #' performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
@@ -35,8 +35,8 @@
 #' @name bartlett
 #' @export
 row_bartlett <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -49,11 +49,11 @@ row_bartlett <- function(x, g) {
   assert_vec_length(g, ncol(x))
 
 
-  bad <- is.na(g)
-  if(any(bad)) {
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
@@ -62,35 +62,36 @@ row_bartlett <- function(x, g) {
   vPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     vPerGroup[,i] <- rowVars(tmpx, n=nPerGroup[,i], na.rm=TRUE)
   }
   nPerGroup[nPerGroup < 2] <- NA # drop group with less than 2 observations
-  nGroups <- rep.int(ncol(nPerGroup), nrow(nPerGroup)) - matrixStats::rowCounts(is.na(nPerGroup))
+  nGroups <- ncol(nPerGroup) - matrixStats::rowCounts(nPerGroup, value=NA)
 
   nSamples <- rowSums(nPerGroup, na.rm=TRUE)
   vtot <- rowSums(vPerGroup*(nPerGroup-1), na.rm=TRUE) / (nSamples - nGroups)
-  df   <- nGroups-1
 
-  ksq  <- ((nSamples-nGroups) * log(vtot) - rowSums((nPerGroup-1) * log(vPerGroup), na.rm=TRUE)) /
+  df  <- nGroups-1
+  ksq <- ((nSamples-nGroups) * log(vtot) - rowSums((nPerGroup-1) * log(vPerGroup), na.rm=TRUE)) /
            (1 + (rowSums(1/(nPerGroup-1), na.rm=TRUE) - 1/(nSamples-nGroups)) / (3 * df))
   p <- stats::pchisq(ksq, df, lower.tail=FALSE)
 
 
   w1 <- nGroups < 2
-  showWarning(w1, 'had less than 2 groups with enough observations')
+  showWarning(w1, 'bartlett', 'had less than 2 groups with enough observations')
 
   w2 <- !w1 & nGroups < length(unique(g))
-  showWarning(w2, 'had groups with less than 2 observations: those groups were removed')
+  showWarning(w2, 'bartlett', 'had groups with less than 2 observations: those groups were removed')
 
-  w3 <- !w1 & vtot==0 & nGroups!=0
-  showWarning(w3, 'had zero variance in all of the groups')
+  w3 <- !w1 & vtot==0
+  showWarning(w3, 'bartlett', 'had zero variance in all of the groups')
 
   w4 <- !w1 & !w3 & rowSums(vPerGroup==0, na.rm=TRUE) > 0
-  showWarning(w4, 'had groups with zero variance: result might be unreliable')
+  showWarning(w4, 'bartlett', 'had groups with zero variance: result might be unreliable')
 
+  df[w1 | w3]  <- NA
   ksq[w1 | w3] <- NA
-  p[w1 | w3] <- NA
+  p[w1 | w3]   <- NA
 
 
   rnames <- rownames(x)

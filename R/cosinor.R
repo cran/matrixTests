@@ -8,7 +8,7 @@
 #' @param x numeric matrix.
 #' @param t a vector specifying time variable for each observation of x.
 #' @param period oscillation period in the units of \code{t} (default = 24, suitable when inspecting diurnal rhythms with hourly data).
-
+#'
 #' @return a data.frame where each row contains the results of a cosinor test
 #' performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
@@ -34,8 +34,8 @@
 #' @name cosinor
 #' @export
 row_cosinor <- function(x, t, period=24) {
-  force(x)
-  force(t)
+  is.null(x)
+  is.null(t)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -48,14 +48,14 @@ row_cosinor <- function(x, t, period=24) {
   assert_numeric_vec_length(period, 1)
   assert_all_in_open_interval(period, 0, Inf)
 
-  bad <- is.na(t)
-  if(any(bad)) {
+  if(anyNA(t)) {
+    bad <- is.na(t)
+    x   <- x[,!bad, drop=FALSE]
+    t   <- t[!bad]
     warning(sum(bad), ' columns dropped due to missing time information')
-    x <- x[,!bad, drop=FALSE]
-    t <- t[!bad]
   }
 
-  period <- rep_len(period, min(1, nrow(x)))
+  period <- rep.int(period, min(1, nrow(x)))
 
   hasinfx <- is.infinite(x)
   x[hasinfx] <- NA
@@ -64,7 +64,7 @@ row_cosinor <- function(x, t, period=24) {
 
   nobs  <- rowSums(!is.na(x))
 
-  b0 <- rep(1, ncol(x))
+  b0 <- rep.int(1, ncol(x))
   b1 <- sinpi(2*t/period)
   b2 <- cospi(2*t/period)
   B  <- cbind(b0, b1, b2)
@@ -78,24 +78,27 @@ row_cosinor <- function(x, t, period=24) {
 
 
   w1 <- hasinfx
-  showWarning(w1, 'had infinite observations that were removed')
+  showWarning(w1, 'cosinor', 'had infinite observations that were removed')
 
   w2 <- nobs < 3
-  showWarning(w2, 'had less than 3 complete observations: no p-values produced, amplitude and acrophase will be unreliable')
+  showWarning(w2, 'cosinor', 'had less than 3 complete observations: no p-values produced, amplitude and acrophase will be unreliable')
 
   w3 <- nobs == 3
-  showWarning(w3, 'had exactly 3 complete observations: no p-values produced')
+  showWarning(w3, 'cosinor', 'had exactly 3 complete observations: no p-values produced')
 
-  w4 <- !w2 & !w3 & res$stats$dfmod < 2
-  showWarning(w4, 'had less than 3 unique timepoints within the specified period: amplitude and acrophase will be unreliable')
+  w4 <- !w2 & !w3 & res$stats$sstot == 0
+  showWarning(w4, 'cosinor', 'had essentially constant values')
 
-  w5 <- !w2 & !w3 & res$stats$rsq == 1
-  showWarning(w5, 'had essentially perfect fit')
+  w5 <- !w2 & res$stats$dfmod == 0
+  showWarning(w5, 'cosinor', 'had only 1 unique timepoint within the specified period: no p-values produced, amplitude and acrophase will be unreliable')
 
-  w6 <- !w2 & !w3 & res$stats$sstot == 0
-  showWarning(w6, 'were essentially constant')
+  w6 <- !w2 & res$stats$dfmod == 1
+  showWarning(w6, 'cosinor', 'had only 2 unique timepoints within the specified period: amplitude and acrophase will be unreliable')
 
-  res$stats[w2 | w3 | w6, c("f","p")] <- NA
+  w7 <- !w2 & !w3 & !w4 & res$stats$rsq == 1
+  showWarning(w7, 'cosinor', 'had essentially perfect fit')
+
+  res$stats[w2 | w3 | w4 | w5, c("dfmod","dfres","f","p")] <- NA
 
 
   rnames <- rownames(x)

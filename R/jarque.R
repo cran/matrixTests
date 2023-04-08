@@ -1,6 +1,6 @@
-#' Jarque-Bera Test
+#' Jarque-Bera test
 #'
-#' Performs a Jarque-Bera goodness of fit test for normality.
+#' Performs Jarque-Bera goodness of fit test for normality.
 #'
 #' \code{row_jarquebera(x)} - Jarque-Bera test on rows.
 #' \code{col_jarquebera(x)} - Jarque-Bera test on columns.
@@ -9,8 +9,8 @@
 #' on every row (or column) of \code{x}
 #'
 #' @param x numeric matrix.
-
-#' @return a data.frame where each row contains the results of a Jarque-Bera
+#'
+#' @return a data.frame where each row contains the results of Jarque-Bera
 #' test performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
 #' 1. obs - number of observations\cr
@@ -30,7 +30,7 @@
 #' @name jarquebera
 #' @export
 row_jarquebera <- function(x) {
-  force(x)
+  is.null(x)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -41,7 +41,7 @@ row_jarquebera <- function(x) {
   assert_numeric_mat_or_vec(x)
 
 
-  n    <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(is.na(x))
+  n    <- ncol(x) - matrixStats::rowCounts(x, value=NA)
   m0   <- x - rowMeans(x, na.rm=TRUE)
   m2   <- rowMeans(m0*m0, na.rm=TRUE)
   m3   <- rowMeans(m0^3, na.rm=TRUE)
@@ -49,19 +49,20 @@ row_jarquebera <- function(x) {
   skew <- (m3 / m2^(1.5))
   kurt <- (m4 / (m2*m2))
 
-  ksq  <- n * skew^2/6 + n * (kurt-3)^2/24
   df   <- rep.int(2, length(n))
+  ksq  <- n * skew^2/6 + n * (kurt-3)^2/24
   p    <- 1 - stats::pchisq(ksq, df=df)
 
 
   w1 <- n < 2
-  showWarning(w1, 'had less than 2 total observations')
+  showWarning(w1, 'jarquebera', 'had less than 2 total observations')
 
   w2 <- !w1 & matrixStats::rowAlls(m0, value=0, na.rm=TRUE)
-  showWarning(w2, 'were essentially constant')
+  showWarning(w2, 'jarquebera', 'had essentially constant values')
 
-  p[w1 | w2] <- NA
+  df[w1 | w2]  <- NA
   ksq[w1 | w2] <- NA
+  p[w1 | w2]   <- NA
 
   rnames <- rownames(x)
   if(!is.null(rnames)) rnames <- make.unique(rnames)

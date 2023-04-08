@@ -1,4 +1,4 @@
-#' correlation
+#' Correlation
 #'
 #' Performs a correlation test on each row/column of a the input matrix.
 #'
@@ -19,7 +19,7 @@
 #' Must be one of "two.sided" (default), "greater" or "less".
 #' @param conf.level confidence levels used for the confidence intervals.
 #' A single number or a numeric vector with value for each observation.
-#' All values must be in the range of [0;1].
+#' All values must be in the range of [0;1] or NA.
 #'
 #' @return a data.frame where each row contains the results of a correlation
 #' test performed on the corresponding row/column of x.\cr\cr
@@ -35,6 +35,10 @@
 #' 9. cor.null - correlation of the null hypothesis (=0)\cr
 #' 10. conf.level - chosen confidence level
 #'
+#' @note
+#' For a marked increase in computation speed turn off the calculation of
+#' confidence interval by setting \code{conf.level} to NA.
+#'
 #' @seealso \code{cor.test()}
 #'
 #' @examples
@@ -47,8 +51,8 @@
 #' @name cortest
 #' @export
 row_cor_pearson <- function(x, y, alternative="two.sided", conf.level=0.95) {
-  force(x)
-  force(y)
+  is.null(x)
+  is.null(y)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -71,30 +75,31 @@ row_cor_pearson <- function(x, y, alternative="two.sided", conf.level=0.95) {
   assert_equal_ncol(x, y)
 
   if(length(alternative)==1)
-    alternative <- rep(alternative, length.out=nrow(x))
+    alternative <- rep.int(alternative, nrow(x))
   assert_character_vec_length(alternative, 1, nrow(x))
 
   choices <- c("two.sided", "less", "greater")
   alternative <- choices[pmatch(alternative, choices, duplicates.ok=TRUE)]
   assert_all_in_set(alternative, choices)
 
+  if(all(is.na(conf.level)))
+    conf.level[] <- NA_real_
   if(length(conf.level)==1)
-    conf.level <- rep(conf.level, length.out=nrow(x))
+    conf.level <- rep.int(conf.level, nrow(x))
   assert_numeric_vec_length(conf.level, 1, nrow(x))
-  assert_all_in_closed_interval(conf.level, 0, 1)
+  assert_all_in_closed_interval(conf.level, 0, 1, na.allow=TRUE)
 
-  mu <- rep(0, length.out=nrow(x)) # can't be changed because different test should be used in that case.
+
+  mu <- rep.int(0, nrow(x)) # can't be changed because different test should be used in that case.
 
   isna <- is.na(x+y)
   x[isna] <- NA
   y[isna] <- NA
 
-  ns <- rep.int(ncol(x), nrow(x)) - matrixStats::rowCounts(isna)
+  ns <- ncol(x) - matrixStats::rowCounts(isna)
 
-  mx <- rowMeans(x, na.rm=TRUE)
-  my <- rowMeans(y, na.rm=TRUE)
-  x  <- x - mx
-  y  <- y - my
+  x  <- x - rowMeans(x, na.rm=TRUE)
+  y  <- y - rowMeans(y, na.rm=TRUE)
   sx <- sqrt(rowSums(x * x, na.rm=TRUE) / (ns-1))
   sy <- sqrt(rowSums(y * y, na.rm=TRUE) / (ns-1))
 
@@ -106,23 +111,24 @@ row_cor_pearson <- function(x, y, alternative="two.sided", conf.level=0.95) {
   pres <- do_pearson(rs, df, alternative, conf.level)
 
   w1 <- ns < 3
-  showWarning(w1, 'had less than 3 complete observations')
+  showWarning(w1, 'cor_pearson', 'had less than 3 complete observations')
 
   w2 <- !w1 & sx==0
-  showWarning(w2, 'had zero standard deviation in x')
+  showWarning(w2, 'cor_pearson', 'had zero standard deviation in x')
 
   w3 <- !w1 & sy==0
-  showWarning(w3, 'had zero standard deviation in y')
+  showWarning(w3, 'cor_pearson', 'had zero standard deviation in y')
 
   w4 <- !w2 & !w3 & ns == 3
-  showWarning(w4, 'had exactly 3 complete observations: no confidence intervals produced')
+  showWarning(w4, 'cor_pearson', 'had exactly 3 complete observations: no confidence intervals produced')
 
   w5 <- !w1 & abs(rs)==1
-  showWarning(w5, 'had essentially perfect fit: results might be unreliable for small sample sizes')
+  showWarning(w5, 'cor_pearson', 'had essentially perfect fit: results might be unreliable for small sample sizes')
 
-  pres[w4, 3:4] <- NA
+  pres[w4, 3:4]       <- NA
+  df[w1 | w2 | w3]    <- NA
   pres[w1 | w2 | w3,] <- NA
-  rs[w1 | w2 | w3] <- NA
+  rs[w1 | w2 | w3]    <- NA
 
   rnames <- rownames(x)
   if(!is.null(rnames)) rnames <- make.unique(rnames)

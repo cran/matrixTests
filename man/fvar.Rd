@@ -6,16 +6,16 @@
 \alias{col_f_var}
 \title{F Variance test}
 \usage{
-row_f_var(x, y, ratio = 1, alternative = "two.sided", conf.level = 0.95)
+row_f_var(x, y, null = 1, alternative = "two.sided", conf.level = 0.95)
 
-col_f_var(x, y, ratio = 1, alternative = "two.sided", conf.level = 0.95)
+col_f_var(x, y, null = 1, alternative = "two.sided", conf.level = 0.95)
 }
 \arguments{
 \item{x}{numeric matrix.}
 
 \item{y}{numeric matrix for the second group of observations.}
 
-\item{ratio}{- hypothesized 'x' and 'y' variance ratio.
+\item{null}{- hypothesized 'x' and 'y' variance ratio.
 A single number or numeric vector with values for each observation.}
 
 \item{alternative}{alternative hypothesis to use for each row/column of x.
@@ -24,7 +24,7 @@ Values must be one of "two.sided" (default), "greater" or "less".}
 
 \item{conf.level}{confidence levels used for the confidence intervals.
 A single number or a numeric vector with values for each observation.
-All values must be in the range of [0:1].}
+All values must be in the range of [0:1] or NA.}
 }
 \value{
 a data.frame where each row contains the results of the F variance
@@ -58,6 +58,10 @@ NA values are always ommited.
 
 Results should be the same as as running \code{var.test(x, y)}
 on every row (or column) of \code{x} and \code{y}.
+}
+\note{
+For a marked increase in computation speed turn off the calculation of
+confidence interval by setting \code{conf.level} to NA.
 }
 \examples{
 X <- iris[iris$Species=="setosa",1:4]

@@ -1,4 +1,4 @@
-#' ONEWAY ANOVA
+#' Oneway ANOVA
 #'
 #' Performs an analysis of variance tests on each row/column of the input matrix.
 #'
@@ -18,7 +18,7 @@
 #'
 #' @param x numeric matrix.
 #' @param g a vector specifying group membership for each observation of x.
-
+#'
 #' @return a data.frame where each row contains the results of an oneway anova
 #' test performed on the corresponding row/column of x.
 #' The columns will vary depending on the type of test performed.\cr\cr
@@ -44,8 +44,8 @@
 #' @name oneway
 #' @export
 row_oneway_equalvar <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -57,11 +57,12 @@ row_oneway_equalvar <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
@@ -70,9 +71,9 @@ row_oneway_equalvar <- function(x, g) {
   mPerGroup <- vPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
-    vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
+    vPerGroup[,i] <- rowVars(tmpx, n=nPerGroup[,i], m=mPerGroup[,i], na.rm=TRUE)
   }
 
   nSamples <- rowSums(nPerGroup)
@@ -88,28 +89,32 @@ row_oneway_equalvar <- function(x, g) {
   F <- (betweenScatter/dft) / (withinScatter/dfr)
   p <- stats::pf(F, dft, dfr, lower.tail=FALSE)
 
+  msqb <- betweenScatter/dft
+  msqw <- withinScatter/dfr
 
   w1 <- nGroups < 2
-  showWarning(w1, 'had less than 2 groups with enough observations')
+  showWarning(w1, 'oneway_equalvar', 'had less than 2 groups with enough observations')
 
   w2 <- !w1 & nGroups==nSamples
-  showWarning(w2, 'had one observation per group')
+  showWarning(w2, 'oneway_equalvar', 'had one observation per group')
 
   w3 <- !w1 & !w2 & withinScatter==0 & betweenScatter==0
-  showWarning(w3, 'had essentially constant values')
+  showWarning(w3, 'oneway_equalvar', 'had essentially constant values')
 
   w4 <- !w1 & !w2 & withinScatter==0 & betweenScatter!=0
-  showWarning(w4, 'had zero within group variance: result might be unreliable')
+  showWarning(w4, 'oneway_equalvar', 'had zero within group variance: result might be unreliable')
 
-  F[w1 | w2 | w3] <- NA
-  p[w1 | w2 | w3] <- NA
+  dft[w1 | w2 | w3] <- NA
+  dfr[w1 | w2 | w3] <- NA
+  F[w1 | w2 | w3]   <- NA
+  p[w1 | w2 | w3]   <- NA
 
 
   rnames <- rownames(x)
   if(!is.null(rnames)) rnames <- make.unique(rnames)
   data.frame(obs.tot=nSamples, obs.groups=nGroups,
              sumsq.between=betweenScatter, sumsq.within=withinScatter,
-             meansq.between=betweenScatter/dft, meansq.within=withinScatter/dfr,
+             meansq.between=msqb, meansq.within=msqw,
              df.between=dft, df.within=dfr, statistic=F, pvalue=p,
              row.names=rnames
              )
@@ -124,8 +129,8 @@ col_oneway_equalvar <- function(x, g) {
 #' @rdname oneway
 #' @export
 row_oneway_welch <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -137,11 +142,12 @@ row_oneway_welch <- function(x, g) {
 
   assert_vec_length(g, ncol(x))
 
-  bad <- is.na(g)
-  if(any(bad)) {
+
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
 
   g <- as.character(g)
@@ -150,9 +156,9 @@ row_oneway_welch <- function(x, g) {
   mPerGroup <- vPerGroup <- nPerGroup
   for(i in seq_along(unique(g))) {
     tmpx <- x[,g==unique(g)[i], drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     mPerGroup[,i] <- rowMeans(tmpx, na.rm=TRUE)
-    vPerGroup[,i] <- rowSums((tmpx-mPerGroup[,i])^2, na.rm=TRUE) / (nPerGroup[,i]-1)
+    vPerGroup[,i] <- rowVars(tmpx, n=nPerGroup[,i], m=mPerGroup[,i], na.rm=TRUE)
   }
   mPerGroup[nPerGroup<2] <- NA
   vPerGroup[nPerGroup<2] <- NA
@@ -169,25 +175,31 @@ row_oneway_welch <- function(x, g) {
   dfr <- 1/(3*tmp)
   dft <- nGroups-1
 
+  # added to prevent stats::pf "NaNs produced" warning
+  dfr[dfr <= 0] <- NA
+  dft[dft <= 0] <- NA
+
   F <- betweenScatter / (dft * (1 + 2 * (nGroups-2) * tmp))
   p <- stats::pf(F, dft, dfr, lower.tail=FALSE)
 
 
   w1 <- nGroups < 2
-  showWarning(w1, 'had less than 2 groups with enough observations')
+  showWarning(w1, 'oneway_welch', 'had less than 2 groups with enough observations')
 
   w2 <- !w1 & nGroups < length(unique(g))
-  showWarning(w2, 'had groups with less than 2 observations: those groups were removed')
+  showWarning(w2, 'oneway_welch', 'had groups with less than 2 observations: those groups were removed')
 
   w3 <- !w1 & rowSums(vPerGroup!=0, na.rm=TRUE)==0
-  showWarning(w3, 'had zero variance in all of the groups')
+  showWarning(w3, 'oneway_welch', 'had zero variance in all of the groups')
 
   w4 <- !w1 & !w3 & rowSums(vPerGroup==0, na.rm=TRUE) > 0
-  showWarning(w4, 'had groups with zero variance: result might be unreliable')
+  showWarning(w4, 'oneway_welch', 'had groups with zero variance: result might be unreliable')
 
 
-  F[w1 | w3] <- NA
-  p[w1 | w3] <- NA
+  dft[w1 | w3] <- NA
+  dfr[w1 | w3] <- NA
+  F[w1 | w3]   <- NA
+  p[w1 | w3]   <- NA
 
   rnames <- rownames(x)
   if(!is.null(rnames)) rnames <- make.unique(rnames)

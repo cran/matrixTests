@@ -8,13 +8,13 @@
 \alias{col_wilcoxon_onesample}
 \alias{row_wilcoxon_paired}
 \alias{col_wilcoxon_paired}
-\title{Wilcoxon Test}
+\title{Wilcoxon test}
 \usage{
 row_wilcoxon_twosample(
   x,
   y,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
@@ -22,24 +22,24 @@ row_wilcoxon_twosample(
 col_wilcoxon_twosample(
   x,
   y,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
 
 row_wilcoxon_onesample(
   x,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
 
 col_wilcoxon_onesample(
   x,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
@@ -47,8 +47,8 @@ col_wilcoxon_onesample(
 row_wilcoxon_paired(
   x,
   y,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
@@ -56,8 +56,8 @@ row_wilcoxon_paired(
 col_wilcoxon_paired(
   x,
   y,
+  null = 0,
   alternative = "two.sided",
-  mu = 0,
   exact = NA,
   correct = TRUE
 )
@@ -67,12 +67,12 @@ col_wilcoxon_paired(
 
 \item{y}{numeric matrix for the second group of observations.}
 
+\item{null}{true values of the location shift for the null hypothesis.
+A single number or numeric vector with values for each observation.}
+
 \item{alternative}{alternative hypothesis to use for each row/column of x.
 A single string or a vector with values for each observation.
 Values must be one of "two.sided" (default), "greater" or "less".}
-
-\item{mu}{true values of the location shift for the null hypothesis.
-A single number or numeric vector with values for each observation.}
 
 \item{exact}{logical or NA (default) indicator whether an exact p-value
 should be computed (see Details).
@@ -93,8 +93,8 @@ They will contain a subset of the following information:\cr
 4. obs.paired - number of paired observations (present in x and y)\cr
 5. statistic - Wilcoxon test statistic\cr
 6. pvalue - p-value\cr
-7. alternative - chosen alternative hypothesis\cr
-8. location.null - location shift of the null hypothesis\cr
+7. location.null - location shift of the null hypothesis\cr
+8. alternative - chosen alternative hypothesis\cr
 9. exact - indicates if exact p-value was computed\cr
 10. correct - indicates if continuity correction was performed
 }
@@ -126,7 +126,7 @@ Results should be the same as running \code{wilcox.test(x, y, paired=TRUE)}
 on every row (or column) of \code{x} and \code{y}.
 
 By default if ‘exact’ argument is set to 'NA', exact p-values are computed
-only if both 'x' and 'y' contain less than 50 finite values and there are no
+only if both 'x' and 'y' contain less than 50 values and there are no
 ties. Single sample and paired tests have additional requirement of not
 having zeroe values (values equal to null hypothesis location argument 'mu').
 Otherwise, a normal approximation is used. Be wary of using 'exact=TRUE' on

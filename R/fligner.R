@@ -14,7 +14,7 @@
 #'
 #' @param x numeric matrix.
 #' @param g a vector specifying group membership for each observation of x.
-
+#'
 #' @return a data.frame where each row contains the results of the
 #' Fligner-Killeen test performed on the corresponding row/column of x.\cr\cr
 #' Each row contains the following information (in order):\cr
@@ -34,8 +34,8 @@
 #' @name fligner
 #' @export
 row_flignerkilleen <- function(x, g) {
-  force(x)
-  force(g)
+  is.null(x)
+  is.null(g)
 
   if(is.vector(x))
     x <- matrix(x, nrow=1)
@@ -48,12 +48,13 @@ row_flignerkilleen <- function(x, g) {
   assert_vec_length(g, ncol(x))
 
 
-  bad <- is.na(g)
-  if(any(bad)) {
+  if(anyNA(g)) {
+    bad <- is.na(g)
+    x   <- x[,!bad, drop=FALSE]
+    g   <- g[!bad]
     warning(sum(bad), ' columns dropped due to missing group information')
-    x <- x[,!bad, drop=FALSE]
-    g <- g[!bad]
   }
+
   g <- as.character(g)
 
 
@@ -61,7 +62,7 @@ row_flignerkilleen <- function(x, g) {
   for(i in seq_along(unique(g))) {
     inds <- g==unique(g)[i]
     tmpx <- x[,inds, drop=FALSE]
-    nPerGroup[,i] <- rep.int(ncol(tmpx), nrow(tmpx)) - matrixStats::rowCounts(is.na(tmpx))
+    nPerGroup[,i] <- ncol(tmpx) - matrixStats::rowCounts(tmpx, value=NA)
     x[,inds] <- tmpx - matrixStats::rowMedians(tmpx, na.rm=TRUE)
   }
 
@@ -76,23 +77,24 @@ row_flignerkilleen <- function(x, g) {
     mPerGroup[,i] <- rowSums(a[,g==unique(g)[i], drop=FALSE], na.rm=TRUE)
   }
 
-  stat <- rowSums(mPerGroup*mPerGroup / nPerGroup)
-  stat <- (stat - nSamples * rowMeans(a, na.rm=TRUE)^2) / rowVars(a, na.rm=TRUE)
   df   <- nGroups-1
+  stat <- rowSums(mPerGroup*mPerGroup / nPerGroup, na.rm=TRUE)
+  stat <- (stat - nSamples * rowMeans(a, na.rm=TRUE)^2) / rowVars(a, na.rm=TRUE)
   p    <- stats::pchisq(stat, df, lower.tail=FALSE)
 
 
   w1 <- nGroups < 2
-  showWarning(w1, 'had less than 2 groups with enough observations')
+  showWarning(w1, 'flignerkilleen', 'had less than 2 groups with enough observations')
 
   w2 <- !w1 & matrixStats::rowAlls(nPerGroup < 2)
-  showWarning(w2, 'had one observation per group')
+  showWarning(w2, 'flignerkilleen', 'had one observation per group')
 
   w3 <- !w1 & !w2 & matrixStats::rowAlls(x==0 | is.na(x))
-  showWarning(w3, 'had zero variance in all of the groups')
+  showWarning(w3, 'flignerkilleen', 'had zero variance in all of the groups')
 
+  df[w1 | w2 | w3]   <- NA
   stat[w1 | w2 | w3] <- NA
-  p[w1 | w2 | w3] <- NA
+  p[w1 | w2 | w3]    <- NA
 
 
   rnames <- rownames(x)
